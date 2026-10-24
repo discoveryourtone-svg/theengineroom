@@ -11,7 +11,7 @@ code=$?
 
 enc() { sed -e 's/%/%25/g' -e 's/\r//g' | awk 'BEGIN{ORS="%0A"} {print}'; }
 
-errs="$(grep -E "error|Error|ERROR|fatal|FAILED|failed|No such file|not found|cannot" "$log" \
+errs="$(grep -E "error|Error|ERROR|fatal|FAILED|failed|!!!|No such file|not found|cannot" "$log" \
         | grep -viE "warning|0 error|-Werror" | head -60)"
 [ -n "$errs" ] || errs="$(tail -40 "$log")"
 
