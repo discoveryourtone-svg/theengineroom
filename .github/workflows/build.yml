@@ -1,0 +1,141 @@
+name: Build The Engine Room
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write   # lets tagged builds publish a GitHub Release
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    env:
+      # Only used to decide whether the optional signing steps run
+      MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+      WIN_CERT_PFX: ${{ secrets.WIN_CERT_PFX }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS (Universal)
+            os: macos-14
+            generator: Xcode
+          - name: Windows
+            os: windows-2022
+            generator: Visual Studio 17 2022
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: ver
+        shell: bash
+        run: echo "version=$(sed -nE 's/^project\(EngineRoom VERSION ([0-9.]+).*/\1/p' CMakeLists.txt)" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse to release with the development licence key
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          if grep -q "DEVELOPMENT" Source/LicencePublicKey.h; then
+            echo "::error::Source/LicencePublicKey.h is still the development key. Create your signing key in Licence Desk and replace this file."
+            exit 1
+          fi
+
+      - name: Configure
+        run: cmake -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release --parallel 4
+
+      # pluginval: the industry-standard plugin stress test
+      - name: Validate (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          curl -L -o pluginval.zip https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_macOS.zip
+          unzip -q pluginval.zip
+          ./pluginval.app/Contents/MacOS/pluginval --strictness-level 5 --validate-in-process \
+            "build/EngineRoom_artefacts/Release/VST3/The Engine Room.vst3"
+
+      - name: Validate (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -Uri https://github.com/Tracktion/pluginval/releases/latest/download/pluginval_Windows.zip -OutFile pluginval.zip
+          Expand-Archive pluginval.zip -DestinationPath pluginval
+          ./pluginval/pluginval.exe --strictness-level 5 --validate-in-process "build/EngineRoom_artefacts/Release/VST3/The Engine Room.vst3"
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      # ── macOS: sign the plugins (only if you've added the secrets), then build the .pkg
+      - name: Sign plugins (macOS)
+        if: runner.os == 'macOS' && env.MACOS_CERT_P12 != ''
+        run: ./scripts/sign_notarize_mac.sh
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          MACOS_DEV_ID: ${{ secrets.MACOS_DEV_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+
+      - name: Build installer (macOS)
+        if: runner.os == 'macOS'
+        run: ./scripts/build_mac_installer.sh "${{ steps.ver.outputs.version }}"
+        env:
+          MACOS_INSTALLER_ID: ${{ secrets.MACOS_INSTALLER_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+
+      - name: Build disk image (macOS)
+        if: runner.os == 'macOS'
+        run: ./scripts/build_mac_dmg.sh "${{ steps.ver.outputs.version }}"
+        env:
+          MACOS_DEV_ID: ${{ secrets.MACOS_DEV_ID }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_APP_PASSWORD: ${{ secrets.APPLE_APP_PASSWORD }}
+
+      # ── Windows: build the Setup.exe with Inno Setup
+      - name: Build installer (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          $art  = (Resolve-Path "build/EngineRoom_artefacts/Release").Path
+          & $iscc "/DVersion=${{ steps.ver.outputs.version }}" "/DArtDir=$art" installer\windows\EngineRoom.iss
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      # Optional Windows code signing: add WIN_CERT_PFX (base64) + WIN_CERT_PASSWORD secrets
+      - name: Sign installer (Windows)
+        if: runner.os == 'Windows' && env.WIN_CERT_PFX != ''
+        shell: pwsh
+        env:
+          WIN_CERT_PFX: ${{ secrets.WIN_CERT_PFX }}
+          WIN_CERT_PASSWORD: ${{ secrets.WIN_CERT_PASSWORD }}
+        run: |
+          [IO.File]::WriteAllBytes("cert.pfx", [Convert]::FromBase64String($env:WIN_CERT_PFX))
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Recurse -Filter signtool.exe | Where-Object FullName -like "*x64*" | Select-Object -First 1
+          & $signtool.FullName sign /f cert.pfx /p $env:WIN_CERT_PASSWORD /tr http://timestamp.digicert.com /td sha256 /fd sha256 (Get-ChildItem dist\*.exe).FullName
+          Remove-Item cert.pfx
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TheEngineRoom-${{ steps.ver.outputs.version }}-${{ runner.os }}
+          path: |
+            dist/*.dmg
+            dist/*.exe
+
+      - name: Publish release (tagged builds)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            dist/*.dmg
+            dist/*.exe

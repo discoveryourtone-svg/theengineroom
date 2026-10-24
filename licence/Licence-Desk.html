@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Licence Desk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="licence-core.js"></script>
+<style>
+  :root {
+    --white: #ffffff; --ink: #0d0d0d; --blue: #5bb8d4; --blue-lite: #e8f6fb;
+    --muted: rgba(13,13,13,.6); --line: rgba(13,13,13,.14);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--white); color: var(--ink); font: 15px/1.5 Jost, Futura, system-ui, sans-serif; }
+  .bar { height: 8px; background: var(--blue); }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 40px; font-weight: 600; margin: 8px 0 4px; letter-spacing: .01em; }
+  h1 span, h2 span { color: var(--blue); }
+  h2 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .lede { color: var(--muted); margin: 0 0 28px; max-width: 60ch; }
+  .card { border: 2px solid var(--ink); border-radius: 16px; padding: 22px; margin-bottom: 18px; }
+  .card.done { border-color: var(--blue); }
+  .step { font-size: 11px; font-weight: 600; letter-spacing: .18em; color: var(--blue); text-transform: uppercase; }
+  .hint { color: var(--muted); font-size: 13.5px; margin: 2px 0 14px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button, .btn { font: 600 12.5px Jost, sans-serif; letter-spacing: .1em; text-transform: uppercase; border-radius: 999px;
+    padding: 11px 20px; border: 1.5px solid var(--ink); background: var(--white); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--ink); color: var(--white); }
+  button:hover { border-color: var(--blue); background: var(--blue-lite); }
+  button.primary:hover { background: #2a2a2a; color: var(--white); border-color: var(--ink); }
+  button:disabled { opacity: .35; cursor: default; }
+  .drop { border: 1.5px dashed var(--line); border-radius: 12px; padding: 16px; text-align: center; color: var(--muted);
+    font-size: 13.5px; transition: background .4s, border-color .4s; }
+  .drop.over { background: var(--blue-lite); border-color: var(--blue); }
+  .status { background: var(--blue-lite); border-left: 4px solid var(--blue); border-radius: 8px; padding: 10px 14px;
+    font-size: 14px; margin-top: 12px; }
+  .status.warn { background: #fff; border: 1.5px solid var(--ink); border-left-width: 4px; }
+  input, select, textarea { font: 14px Jost, sans-serif; color: var(--ink); border: 1.5px solid var(--ink); border-radius: 10px;
+    padding: 10px 12px; background: var(--white); }
+  textarea { width: 100%; min-height: 96px; resize: vertical; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--blue); }
+  label { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; display: block; margin-bottom: 4px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .grid input, .grid select { width: 100%; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 14px; }
+  th { text-align: left; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 600;
+    border-bottom: 1.5px solid var(--ink); padding: 6px 8px; }
+  td { border-bottom: 1px solid var(--line); padding: 7px 8px; vertical-align: top; }
+  td.num { font-weight: 600; color: var(--blue); white-space: nowrap; }
+  .pill { font-size: 11px; font-weight: 600; letter-spacing: .1em; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); }
+  .pill.new { border-color: var(--blue); color: var(--ink); background: var(--blue-lite); }
+  .key { font-family: ui-monospace, Menlo, monospace; font-size: 12px; word-break: break-all; background: var(--blue-lite);
+    border-radius: 10px; padding: 12px; margin-top: 10px; }
+  .tabs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+  .tabs button { padding: 9px 16px; }
+  .tabs button.on { background: var(--ink); color: var(--white); }
+  .hidden { display: none !important; }
+  footer { display: flex; justify-content: flex-end; align-items: center; gap: 10px; font-size: 11px; font-weight: 600;
+    letter-spacing: .22em; margin-top: 30px; }
+  @media (max-width: 560px) { h1 { font-size: 32px; } .card { padding: 16px; } td:nth-child(3) { display: none; } }
+</style>
+</head>
+<body>
+<div class="bar"></div>
+<main>
+  <div class="step">The Engine Room</div>
+  <h1>Licence <span>Desk.</span></h1>
+  <p class="lede">Issue licence keys to your pre-sale buyers. Everything happens on this computer. Nothing is uploaded anywhere.</p>
+
+  <!-- 1. Signing key -->
+  <section class="card" id="keyCard">
+    <div class="step">Step 1</div>
+    <h2>Your signing <span>key.</span></h2>
+    <p class="hint">The private key file that proves a licence came from you. Load it each time you open this page.</p>
+    <div class="drop" id="keyDrop">Drop <b>engine-room-private.jwk</b> here, or
+      <button id="keyPick" type="button">Choose file</button>
+      <input type="file" id="keyFile" accept=".jwk,.json" class="hidden">
+    </div>
+    <div id="keyStatus" class="status hidden"></div>
+    <details style="margin-top:14px">
+      <summary class="hint" style="cursor:pointer;margin:0">First time? Create your signing key</summary>
+      <div class="status warn">
+        Do this <b>once</b>, before you issue any real keys. You'll get two files:
+        <b>engine-room-private.jwk</b> (keep secret, back it up in two places, never email or upload it) and
+        <b>LicencePublicKey.h</b> (replace the one in the plugin's <i>Source</i> folder, then rebuild).
+        Making a new key later switches off every licence you've already issued.
+        <div class="row" style="margin-top:10px">
+          <input id="newLabel" placeholder="Label, e.g. Engine Room 2026" style="flex:1;min-width:200px">
+          <button id="makeKey" type="button">Create signing key</button>
+        </div>
+      </div>
+    </details>
+  </section>
+
+  <!-- 2. Ledger -->
+  <section class="card" id="ledgerCard">
+    <div class="step">Step 2</div>
+    <h2>Your <span>ledger.</span></h2>
+    <p class="hint">The record of every key you've issued. Load your latest copy so founder numbers carry on and nobody gets two keys. Skip this only for your very first batch.</p>
+    <div class="drop" id="ledgerDrop">Drop <b>issued_ledger.csv</b> here, or
+      <button id="ledgerPick" type="button">Choose file</button>
+      <input type="file" id="ledgerFile" accept=".csv" class="hidden">
+    </div>
+    <div id="ledgerStatus" class="status">No ledger loaded. Numbering starts at Founder #001.</div>
+  </section>
+
+  <!-- 3. Issue -->
+  <section class="card">
+    <div class="step">Step 3</div>
+    <h2>Issue <span>keys.</span></h2>
+    <div class="tabs">
+      <button type="button" class="on" data-tab="batch">A batch of buyers</button>
+      <button type="button" data-tab="single">One buyer</button>
+      <button type="button" data-tab="verify">Check a key</button>
+    </div>
+
+    <div data-panel="batch">
+      <p class="hint">Export your pre-sale orders as CSV (HighLevel, Shopify, Stripe and most stores work). It needs an email column; names and order numbers are picked up automatically.</p>
+      <div class="drop" id="buyersDrop">Drop your buyers CSV here, or
+        <button id="buyersPick" type="button">Choose file</button>
+        <input type="file" id="buyersFile" accept=".csv" class="hidden">
+      </div>
+      <div class="row" style="margin-top:14px">
+        <label for="batchEdition" style="margin:0">Edition</label>
+        <select id="batchEdition"><option value="founder">Founder (pre-sale)</option><option value="standard">Standard</option></select>
+        <span id="buyersInfo" class="hint" style="margin:0"></span>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <button class="primary" id="issueBatch" type="button" disabled>Issue keys</button>
+      </div>
+    </div>
+
+    <div data-panel="single" class="hidden">
+      <div class="grid">
+        <div><label for="sName">Name</label><input id="sName" placeholder="Sam Lee"></div>
+        <div><label for="sEmail">Email</label><input id="sEmail" type="email" placeholder="sam@example.com"></div>
+        <div><label for="sOrder">Order no.</label><input id="sOrder" placeholder="optional"></div>
+        <div><label for="sEdition">Edition</label><select id="sEdition"><option value="founder">Founder</option><option value="standard">Standard</option></select></div>
+      </div>
+      <button class="primary" id="issueOne" type="button" disabled>Issue key</button>
+      <div id="oneResult"></div>
+    </div>
+
+    <div data-panel="verify" class="hidden">
+      <p class="hint">Paste a key to see who it belongs to and whether it's genuine. Needs your signing key loaded.</p>
+      <textarea id="vKey" placeholder="DYT-ER-..."></textarea>
+      <div class="row" style="margin-top:10px"><button id="verifyBtn" type="button" disabled>Check key</button></div>
+      <div id="vResult"></div>
+    </div>
+  </section>
+
+  <!-- Results -->
+  <section class="card hidden" id="results">
+    <div class="step">Done</div>
+    <h2>Keys <span>ready.</span></h2>
+    <div class="status warn"><b>Save the updated ledger now.</b> It replaces your old one and is the only record of who has which key.</div>
+    <div class="row" style="margin-top:14px">
+      <button class="primary" id="dlZip" type="button">Download everything (.zip)</button>
+      <button id="dlLedger" type="button">Updated ledger</button>
+      <button id="dlCrm" type="button">CRM import CSV</button>
+    </div>
+    <p class="hint" style="margin-top:12px">The zip has a .dytlicence file and a ready-to-send email for each buyer, the CRM import (map <i>engine_room_licence_key</i> to a custom field and merge it into your email), and the ledger.</p>
+    <table><thead><tr><th>No.</th><th>Name</th><th>Email</th><th></th></tr></thead><tbody id="resultRows"></tbody></table>
+  </section>
+
+  <footer>
+    <svg width="34" height="12" viewBox="0 0 34 12" aria-hidden="true"><path d="M1 6 Q5.25 -1 9.5 6 T18 6 T26.5 6 T35 6" fill="none" stroke="#5bb8d4" stroke-width="2" stroke-linecap="round"/></svg>
+    DISCOVER YOUR TONE
+  </footer>
+</main>
+
+<script>
+const L = window.DytLicence;
+const $ = (id) => document.getElementById(id);
+let privKey = null, pubKey = null, jwk = null, ledger = [], buyers = [], lastBatch = [];
+
+const pad3 = (n) => String(n).padStart(3, "0");
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function download(name, content, type = "text/plain") {
+  const url = URL.createObjectURL(content instanceof Blob ? content : new Blob([content], { type }));
+  const a = Object.assign(document.createElement("a"), { href: url, download: name });
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function emailText(row) {
+  const first = (row.name.split(/\s+/)[0]) || "there";
+  const founder = row.edition === "founder"
+    ? `You're Founder #${pad3(row.serial)}. That number shows on your pedal in the plugin, and it's yours for good.\n\n` : "";
+  return `Subject: Your Engine Room key is here.\n\nHey ${first},\n\nThanks for backing The Engine Room early. ${founder}Here's how to get it running:\n\n1. Download the installer for Mac or Windows from your account page.\n2. Open it in your DAW (or the standalone app) and click ACTIVATE.\n3. Paste this key, or drop the attached .dytlicence file onto the pedal:\n\n${row.key}\n\nOne key covers all your own computers. Keep this email somewhere safe.\n\nFind your sound,\nKyle\nDiscover Your Tone\n`;
+}
+
+const crmRows = () => ledger.map((r) => ({ email: r.email, name: r.name, order_id: r.order_id, engine_room_edition: r.edition,
+  engine_room_number: r.serial, engine_room_licence_key: r.key }));
+const CRM_FIELDS = ["email", "name", "order_id", "engine_room_edition", "engine_room_number", "engine_room_licence_key"];
+
+function refreshButtons() {
+  $("issueBatch").disabled = !privKey || !buyers.length;
+  $("issueOne").disabled = !privKey;
+  $("verifyBtn").disabled = !pubKey;
+}
+
+function nextNumbers() {
+  const next = (ed) => 1 + Math.max(0, ...ledger.filter((r) => r.edition === ed).map((r) => +r.serial));
+  return `Next: Founder #${pad3(next("founder"))}, Standard #${next("standard")}.`;
+}
+
+// ── Wiring file drops ────────────────────────────────────────────────────
+function wireDrop(dropId, pickId, inputId, onText) {
+  const drop = $(dropId), input = $(inputId);
+  $(pickId).onclick = () => input.click();
+  input.onchange = async () => { if (input.files[0]) onText(await input.files[0].text(), input.files[0].name); input.value = ""; };
+  drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
+  drop.ondragleave = () => drop.classList.remove("over");
+  drop.ondrop = async (e) => {
+    e.preventDefault(); drop.classList.remove("over");
+    const f = e.dataTransfer.files[0]; if (f) onText(await f.text(), f.name);
+  };
+}
+
+async function useKey(obj) {
+  privKey = await L.importPrivate(obj);
+  pubKey = await L.importPublicRaw(L.unb64u(obj.x));
+  jwk = obj;
+  const fp = Array.from(L.unb64u(obj.x).slice(0, 4), (b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+  const s = $("keyStatus");
+  s.className = "status";
+  s.innerHTML = `Signing key loaded: <b>${esc(obj.label || "unnamed")}</b> &middot; fingerprint ${fp}` +
+    (/DEVELOPMENT/i.test(obj.label || "") ? `<br><b>This is the development key.</b> Create your own before issuing real licences.` : "");
+  $("keyCard").classList.add("done");
+  refreshButtons();
+}
+
+wireDrop("keyDrop", "keyPick", "keyFile", async (text) => {
+  try { await useKey(JSON.parse(text)); }
+  catch (e) { const s = $("keyStatus"); s.className = "status warn"; s.textContent = e.message || "That file couldn't be read."; }
+});
+
+$("makeKey").onclick = async () => {
+  if (privKey && !confirm("A signing key is already loaded. Creating a new one means the plugin must be rebuilt, and keys from the old one stop working. Continue?")) return;
+  try {
+    const obj = await L.generateKeyPair($("newLabel").value.trim() || undefined);
+    download("engine-room-private.jwk", JSON.stringify(obj, null, 2), "application/json");
+    download("LicencePublicKey.h", L.headerFor(obj));
+    await useKey(obj);
+  } catch (e) {
+    alert("This browser can't create Ed25519 keys. Update Chrome, Safari or Firefox and try again.");
+  }
+};
+
+wireDrop("ledgerDrop", "ledgerPick", "ledgerFile", (text) => {
+  ledger = L.parseCSV(text).filter((r) => r.key);
+  $("ledgerStatus").textContent = `${ledger.length} keys on record. ${nextNumbers()}`;
+  $("ledgerCard").classList.add("done");
+});
+
+wireDrop("buyersDrop", "buyersPick", "buyersFile", (text, name) => {
+  buyers = L.parseCSV(text).map(L.buyerFromRow);
+  const valid = buyers.filter((b) => /@/.test(b.email));
+  $("buyersInfo").textContent = `${name}: ${valid.length} buyers with an email` + (valid.length < buyers.length ? `, ${buyers.length - valid.length} row${buyers.length - valid.length === 1 ? "" : "s"} skipped` : "");
+  buyers = valid;
+  refreshButtons();
+});
+
+// ── Tabs ─────────────────────────────────────────────────────────────────
+document.querySelectorAll("[data-tab]").forEach((b) => b.onclick = () => {
+  document.querySelectorAll("[data-tab]").forEach((x) => x.classList.toggle("on", x === b));
+  document.querySelectorAll("[data-panel]").forEach((p) => p.classList.toggle("hidden", p.dataset.panel !== b.dataset.tab));
+});
+
+// ── Issuing ──────────────────────────────────────────────────────────────
+function showResults(items) {
+  lastBatch = items;
+  $("resultRows").innerHTML = items.map(({ row, isNew }) =>
+    `<tr><td class="num">${row.edition === "founder" ? "F" : "S"}${pad3(row.serial)}</td><td>${esc(row.name)}</td>` +
+    `<td>${esc(row.email)}</td><td><span class="pill ${isNew ? "new" : ""}">${isNew ? "NEW" : "ALREADY HAD ONE"}</span></td></tr>`).join("");
+  $("results").classList.remove("hidden");
+  $("ledgerStatus").textContent = `${ledger.length} keys on record. ${nextNumbers()}`;
+  $("results").scrollIntoView({ behavior: "smooth" });
+}
+
+$("issueBatch").onclick = async () => {
+  const items = [];
+  for (const b of buyers) items.push(await L.issue(privKey, ledger, b, $("batchEdition").value));
+  showResults(items);
+};
+
+$("issueOne").onclick = async () => {
+  const email = $("sEmail").value.trim();
+  if (!/@/.test(email)) { $("oneResult").innerHTML = `<div class="status warn">Add the buyer's email.</div>`; return; }
+  const item = await L.issue(privKey, ledger, { name: $("sName").value.trim() || email.split("@")[0], email,
+    order_id: $("sOrder").value.trim(), edition: $("sEdition").value }, $("sEdition").value);
+  const r = item.row;
+  $("oneResult").innerHTML = `<div class="status">${item.isNew ? "Issued" : "Already issued"}: <b>${r.edition === "founder" ? "Founder #" + pad3(r.serial) : "Licence #" + r.serial}</b> for ${esc(r.name)}</div>` +
+    `<div class="key" id="oneKey">${esc(r.key)}</div><div class="row" style="margin-top:10px"><button id="copyOne" type="button">Copy key</button></div>`;
+  $("copyOne").onclick = () => navigator.clipboard.writeText(r.key).then(() => $("copyOne").textContent = "Copied");
+  showResults([item]);
+};
+
+$("verifyBtn").onclick = async () => {
+  try {
+    const i = await L.verifyKey($("vKey").value, pubKey);
+    $("vResult").innerHTML = `<div class="status">Genuine. <b>${i.edition === "founder" ? "Founder #" + pad3(i.serial) : "Licence #" + i.serial}</b>, ${esc(i.name)} &middot; ${esc(i.email)} &middot; issued ${esc(i.issued)}</div>`;
+  } catch (e) {
+    $("vResult").innerHTML = `<div class="status warn">Not valid with this signing key (${esc(e.message)}).</div>`;
+  }
+};
+
+// ── Downloads ────────────────────────────────────────────────────────────
+$("dlLedger").onclick = () => download("issued_ledger.csv", L.toCSV(ledger, L.LEDGER_FIELDS), "text/csv");
+$("dlCrm").onclick = () => download("crm_import.csv", L.toCSV(crmRows(), CRM_FIELDS), "text/csv");
+$("dlZip").onclick = async () => {
+  if (!window.JSZip) { alert("Zip download needs an internet connection. Use the separate buttons instead."); return; }
+  const zip = new JSZip();
+  for (const { row } of lastBatch) {
+    zip.file(`licence_files/${L.fileStem(row)}.dytlicence`, L.licenceFileText(row));
+    zip.file(`emails/${L.fileStem(row)}.txt`, emailText(row));
+  }
+  zip.file("issued_ledger.csv", L.toCSV(ledger, L.LEDGER_FIELDS));
+  zip.file("crm_import.csv", L.toCSV(crmRows(), CRM_FIELDS));
+  download(`engine-room-keys-${new Date().toISOString().slice(0, 10)}.zip`, await zip.generateAsync({ type: "blob" }));
+};
+
+window.addEventListener("beforeunload", (e) => { if (lastBatch.some((x) => x.isNew)) { e.preventDefault(); e.returnValue = ""; } });
+</script>
+</body>
+</html>

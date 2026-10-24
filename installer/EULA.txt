@@ -1,0 +1,24 @@
+THE ENGINE ROOM — LICENCE AGREEMENT
+Discover Your Tone · discoveryourtone.com
+
+The short version, in plain English:
+
+1. Your licence is for you. Install The Engine Room on as many of your own computers as you like. Use it on anything you make, including commercial releases. No royalties, no credits needed.
+
+2. Please don't share your key. Each key carries your name and email and shows on the pedal. Keys that turn up publicly can be switched off in a future update.
+
+3. Free trial. Without a key, everything works for 14 days. After that the pedal drops to clean for a few seconds every minute until you activate.
+
+4. Don't resell, rent out or reverse-engineer the software, or pass it off as your own.
+
+5. Updates. Bug-fix updates to version 1 are free. Major new versions may be offered as a paid upgrade.
+
+6. As-is. We've tested The Engine Room carefully, but it's provided "as is", without warranty. Discover Your Tone isn't liable for losses arising from its use, to the extent the law allows. Nothing here affects your statutory rights as a consumer.
+
+7. Refunds. If it doesn't work on your system, contact us within 30 days of purchase for a refund. Your key is switched off when a refund is issued.
+
+8. Third-party components. The Engine Room uses the JUCE framework, the VST3 SDK (VST is a trademark of Steinberg Media Technologies GmbH), Monocypher (BSD-2-Clause / CC0) and the Jost typeface (SIL Open Font License 1.1). Their licences are available on request.
+
+This agreement is governed by the laws of Spain.
+
+By installing, you agree to these terms.

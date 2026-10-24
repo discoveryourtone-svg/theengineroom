@@ -1,0 +1,11 @@
+build/
+JUCE/
+renders/
+.DS_Store
+*.user
+# Never commit the signing key or buyer data
+licence/keys/
+licence/outbox/
+licence/issued_ledger.csv
+*.jwk
+dist/
