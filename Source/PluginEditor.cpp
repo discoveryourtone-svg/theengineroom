@@ -339,7 +339,8 @@ void PedalFace::showActivation()
     if (activation == nullptr)
     {
         activation = std::make_unique<ActivationPanel> (proc.getLicence());
-        activation->onClose = [this] { MessageManager::callAsync ([sp = SafePointer<PedalFace> (this)] { if (sp) sp->hideActivation(); }); };
+        SafePointer<PedalFace> safe (this);
+        activation->onClose = [safe] { MessageManager::callAsync ([safe] { if (safe) safe->hideActivation(); }); };
         addAndMakeVisible (*activation);
         activation->setBounds (getLocalBounds());
     }
