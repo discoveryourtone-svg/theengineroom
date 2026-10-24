@@ -30,7 +30,7 @@ jobs:
             generator: Visual Studio 17 2022
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Read version
         id: ver
@@ -50,7 +50,8 @@ jobs:
         run: cmake -B build -G "${{ matrix.generator }}" -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
-        run: cmake --build build --config Release --parallel 4
+        shell: bash
+        run: ./scripts/ci_run.sh "Build" cmake --build build --config Release --parallel 4
 
       # pluginval: the industry-standard plugin stress test
       - name: Validate (macOS)
@@ -84,7 +85,7 @@ jobs:
 
       - name: Build installer (macOS)
         if: runner.os == 'macOS'
-        run: ./scripts/build_mac_installer.sh "${{ steps.ver.outputs.version }}"
+        run: ./scripts/ci_run.sh "Mac installer" bash -x ./scripts/build_mac_installer.sh "${{ steps.ver.outputs.version }}"
         env:
           MACOS_INSTALLER_ID: ${{ secrets.MACOS_INSTALLER_ID }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
@@ -93,7 +94,7 @@ jobs:
 
       - name: Build disk image (macOS)
         if: runner.os == 'macOS'
-        run: ./scripts/build_mac_dmg.sh "${{ steps.ver.outputs.version }}"
+        run: ./scripts/ci_run.sh "Mac disk image" bash -x ./scripts/build_mac_dmg.sh "${{ steps.ver.outputs.version }}"
         env:
           MACOS_DEV_ID: ${{ secrets.MACOS_DEV_ID }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
